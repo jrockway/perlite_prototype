@@ -1,4 +1,4 @@
-class Say::Hello {
+class Say::Hello is mutable {
     has 'response' => ( is => 'ro' );
     method hello($who) { $self->response->body("hello, $who") }
 };
