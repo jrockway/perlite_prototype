@@ -1,3 +1,7 @@
+class Say::Hello {
+    has 'response' => ( is => 'ro' );
+    method hello($who) { $self->response->body("hello, $who") }
+};
 
 my ($req, $res) = @_;
-$res->body( 'hello, world' );
+Say::Hello->new(response => $res)->hello('world');
