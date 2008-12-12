@@ -43,7 +43,7 @@ class Perlite::Compiler {
     method _define_package {
         state $serial = 0;
         $serial++;
-        return "package __COMPILED__::$serial;\n\n";
+        return "package __COMPILED__::$serial;\nuse MooseX::Declare;\n\n";
     }
 
     method _declare_lexicals {
@@ -64,13 +64,13 @@ class Perlite::Compiler {
 
     method _return_lexical_setters {
         return '{'. (join "", map {
-            "'$_' => sub { $_ = shift }"
+            "'$_' => sub { $_ = shift },"
         } $self->lexicals). '}';
     }
 
     method _return_declaration_readers {
         return '{'. (join "", map {
-            "'$_' => sub { \$__DECLARE__$_ }"
+            "'$_' => sub { \$__DECLARE__$_ },"
         } $self->declarations). '}';
     }
 
