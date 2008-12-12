@@ -1,13 +1,15 @@
 use MooseX::Declare;
+use Path::Class::File;
+
+sub Path::Class::File::extension {
+    return [split /[.]/, shift->stringify]->[-1];
+}
 
 class Perlite::Server with MooseX::LogDispatch::Levels {
     use HTTP::Engine;
     use MooseX::Types::Path::Class qw(Dir);
-    use String::TT qw/tt strip/;
 
-    #use Perlite::Compiler;
-    #use Perlite::Cache;
-    #use Perlite::Run;
+    use Perlite::Compiler;
 
     has 'directory' => (
         is       => 'ro',
@@ -22,8 +24,28 @@ class Perlite::Server with MooseX::LogDispatch::Levels {
         lazy_build => 1,
     );
 
-    sub _build_engine {
-        my $self = shift;
+    has 'handlers' => (
+        is         => 'ro',
+        isa        => 'ArrayRef',
+        auto_deref => 1,
+        default    => sub {
+            my $self = shift;
+            require Perlite::Handler::Static;
+            require Perlite::Handler::Script;
+            return [
+                Perlite::Handler::Script->new(
+                    server   => $self,
+                    compiler => Perlite::Compiler->new(
+                        lexicals     => ['$request', '$response'],
+                        declarations => ['debug'],
+                    ),
+                ),
+                Perlite::Handler::Static->new( server => $self ),
+            ];
+        },
+    );
+
+    method _build_engine {
         return HTTP::Engine->new(
             interface => {
                 module => 'ServerSimple',
@@ -38,8 +60,7 @@ class Perlite::Server with MooseX::LogDispatch::Levels {
         );
     }
 
-    sub _handle_request {
-        my ($self, $request) = @_;
+    method _handle_request($request) {
         my @path = split '/', $request->uri->canonical->path;
         my $file = pop @path;
 
@@ -49,24 +70,20 @@ class Perlite::Server with MooseX::LogDispatch::Levels {
         $self->debug("trying to serve $relevant_file");
 
         my $response = HTTP::Engine::Response->new;
-        if( !-e $relevant_file ){
+        if ( !-e $relevant_file ) {
             $response->status(404);
             $response->body('not found');
             return $response;
         }
 
-        if ( $relevant_file !~ /[.]pl$/ ){
-            # figure out content-type
-            $response->body( $relevant_file->openr );
-            return $response;
+        for my $handler ( $self->handlers ){
+            if( $handler->is_applicable($relevant_file) ){
+                $handler->run($relevant_file, $request, $response);
+                return $response;
+            }
         }
 
-        # finally, an app
-        my $text = $relevant_file->slurp;
-        my $sub = eval qq{ use MooseX::Declare; sub { $text };};
-        confess "failed to compile: $@" if !$sub;
-
-        $sub->($request, $response);
+        die 'unhandled request';
         return $response;
     }
 };
