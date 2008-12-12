@@ -3,5 +3,4 @@ class Say::Hello is mutable {
     method hello($who) { $self->response->body("hello, $who") }
 };
 
-my ($req, $res) = @_;
-Say::Hello->new(response => $res)->hello('world');
+Say::Hello->new(response => $response)->hello('world');
