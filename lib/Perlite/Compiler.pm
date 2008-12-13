@@ -34,8 +34,8 @@ class Perlite::Compiler {
     method _build_cache {
         return Perlite::Cache->new(
             builder => sub {
-                my $code = shift;
-                return $self->_compile($code);
+                my ($file, $text) = @_;
+                return $self->_compile($file, $text);
             },
         );
     }
@@ -74,7 +74,7 @@ class Perlite::Compiler {
         } $self->declarations). '}';
     }
 
-    method _compile(Str $program){
+    method _compile($file, $program){
         my $code =
           $self->_define_package.
           $self->_declare_lexicals.
@@ -83,8 +83,9 @@ class Perlite::Compiler {
           '['.
             $self->_return_lexical_setters. ','.
             $self->_return_declaration_readers. ','.
-            "sub {\n#line 1 ORIGINAL\n". # todo: real filename
-            "$program }, ".
+            "sub {\n#line 1 $file\n".
+              $program.
+            " }, ".
           ']';
 
         my $result = $self->compartment->eval($code);
@@ -95,8 +96,8 @@ class Perlite::Compiler {
         );
     }
 
-    method compile(Str $program) {
-        return $self->cache->cache($program);
+    method compile($file, $program) {
+        return $self->cache->cache($file, $program);
     }
 };
 

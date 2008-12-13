@@ -16,7 +16,7 @@ class Perlite::Handler::Script with Perlite::Handler {
     # TODO: eval around compile / run --> error screen
     method run($file, $request, $response){
         my $text = $file->slurp;
-        my $script = $self->compiler->compile($text);
+        my $script = $self->compiler->compile($file, $text);
         $script->set_lexical('$request' => $request);
         $script->set_lexical('$response' => $response);
         $script->run;

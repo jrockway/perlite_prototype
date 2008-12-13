@@ -7,7 +7,7 @@ class Perlite::Cache {
     has 'entries' => (
         metaclass => 'Collection::Hash',
         is        => 'ro',
-        isa       => 'HashRef',
+        isa       => 'HashRef[ArrayRef]',
         required  => 1,
         default   => sub { +{} },
         provides  => {
@@ -35,14 +35,16 @@ class Perlite::Cache {
         required => 1,
     );
 
-    method cache(Str $program){
-        my $hash = $self->hash_function->($program);
-        my $obj = $self->_get($hash);
-        return $obj if defined $obj;
+    method cache($file, $text){
+        my $entry = $self->_get("$file") || [];
+        my ($cached_hash, $cached_obj) = @$entry;
 
-        $obj = $self->builder->($program);
-        $self->_set($hash, $obj);
-        return $obj;
+        my $text_hash = $self->hash_function->($text);
+        return $cached_obj if defined $cached_hash && $text_hash eq $cached_hash;
+
+        my $new_obj = $self->builder->($file, $text);
+        $self->_set("$file", [$text_hash, $new_obj]);
+        return $new_obj;
     }
 };
 

@@ -9,7 +9,7 @@ my $compiler = Perlite::Compiler->new(
     declarations => ['declare'],
 );
 
-my $script = $compiler->compile(q{
+my $script = $compiler->compile('test', q{
 return "$lexical, there";
 declare 'OH HAI';
 });
