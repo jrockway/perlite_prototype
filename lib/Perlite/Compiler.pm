@@ -25,12 +25,6 @@ class Perlite::Compiler {
         auto_deref => 1,
     );
 
-    has 'compartment' => (
-        is       => 'ro',
-        isa      => 'Perlite::Compartment',
-        default => sub { Perlite::Compartment->new },
-    );
-
     method _build_cache {
         return Perlite::Cache->new(
             builder => sub {
@@ -88,11 +82,13 @@ class Perlite::Compiler {
             " }, ".
           ']';
 
-        my $result = $self->compartment->eval($code);
+        my $compartment = Perlite::Compartment->new;
+        my $result = $compartment->eval($code);
         return Perlite::Compiled->new(
+            compartment         => $compartment,
             main_body           => $result->[2],
-            lexical_setters     => $result->[0],
             declaration_readers => $result->[1],
+            lexical_setters     => $result->[0],
         );
     }
 

@@ -1,10 +1,17 @@
 use MooseX::Declare;
 use MooseX::AttributeHelpers;
+use Perlite::Compartment;
 
 class Perlite::Compiled {
     has 'main_body' => (
         is       => 'ro',
         isa      => 'CodeRef',
+        required => 1,
+    );
+
+    has 'compartment' => (
+        is       => 'ro',
+        isa      => 'Perlite::Compartment',
         required => 1,
     );
 
